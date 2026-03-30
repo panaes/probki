@@ -496,9 +496,8 @@ function switchTrack(idx, track) {
   const wasPlaying = !audio.paused;
   const pos = audio.currentTime;
 
-  audio.src = track === 'original' ? SAMPLES[idx].original : SAMPLES[idx].restored;
-  audio._track = track;
-
+  const newSrc = track === 'original' ? SAMPLES[idx].original : SAMPLES[idx].restored;
+  
   const bo = document.getElementById('btn-orig-' + idx);
   const br = document.getElementById('btn-rest-' + idx);
   const fill = document.getElementById('fill-' + idx);
@@ -507,9 +506,12 @@ function switchTrack(idx, track) {
   br.className = 'track-btn' + (track === 'restored'  ? ' active-restored'  : '');
   fill.style.background = track === 'original' ? 'var(--original)' : 'var(--restored)';
 
-  audio.addEventListener('loadedmetadata', () => {
-    document.getElementById('dur-' + idx).textContent = fmt(audio.duration);
-    audio.currentTime = Math.min(pos, audio.duration);
+  audio._track = track;
+  audio.src = newSrc;
+  audio.load();
+
+  audio.addEventListener('canplaythrough', () => {
+    audio.currentTime = Math.min(pos, audio.duration || 0);
     if (wasPlaying) audio.play();
   }, { once: true });
 }
