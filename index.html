@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arkadiusz Szewczyk — Audio Restoration Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a18;
+    --gold: #b5882a;
+    --gold-light: #e8d5a0;
+    --warm: #f5f1ea;
+    --muted: #7a7670;
+    --border: #ddd8ce;
+    --white: #fefcf8;
+    --original: #4a6fa5;
+    --restored: #2d7a5a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--white);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 2.5rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background: var(--white);
+  }
+
+  .header-left h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+
+  .header-left .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 0.35rem;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .contact-link {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .contact-link:hover { color: var(--gold); border-color: var(--gold); }
+
+  .lang-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .lang-btn {
+    padding: 0.4rem 0.85rem;
+    font-size: 0.75rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    transition: background 0.15s, color 0.15s;
+  }
+  .lang-btn.active {
+    background: var(--ink);
+    color: var(--white);
+  }
+
+  /* ── INTRO ── */
+  .intro {
+    max-width: 680px;
+    padding: 2.5rem 2.5rem 0;
+  }
+  .intro p {
+    font-size: 0.9rem;
+    line-height: 1.8;
+    color: var(--muted);
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1.5rem 2.5rem;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-original { background: var(--original); }
+  .dot-restored { background: var(--restored); }
+
+  /* ── SAMPLES ── */
+  .samples {
+    padding: 0 2.5rem 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .sample-card {
+    border-top: 1px solid var(--border);
+    padding: 1.75rem 0;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem 2rem;
+    align-items: start;
+  }
+  .sample-card:last-child { border-bottom: 1px solid var(--border); }
+
+  .sample-meta { min-width: 0; }
+
+  .sample-number {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+  }
+
+  .sample-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+    margin-bottom: 0.3rem;
+  }
+
+  .sample-desc {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 480px;
+  }
+
+  /* ── PLAYER ── */
+  .player {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-width: 280px;
+    max-width: 340px;
+    width: 100%;
+    align-self: center;
+  }
+
+  .track-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .track-btn {
+    padding: 0.55rem 0.5rem;
+    font-size: 0.72rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    background: var(--warm);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+  .track-btn:first-child { border-right: 1px solid var(--border); }
+
+  .track-btn.active-original {
+    background: var(--original);
+    color: #fff;
+  }
+  .track-btn.active-restored {
+    background: var(--restored);
+    color: #fff;
+  }
+
+  .track-btn .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .play-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .play-btn:hover { border-color: var(--gold); background: var(--warm); }
+
+  .play-btn svg { width: 14px; height: 14px; fill: var(--ink); }
+
+  .progress-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.1s linear;
+    background: var(--original);
+  }
+  .active-restored ~ .controls .progress-fill,
+  .restored-fill { background: var(--restored); }
+
+  .time-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  footer p { font-size: 0.75rem; color: var(--muted); }
+  footer a { color: var(--gold); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    header, .intro, .legend, .samples, footer { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .sample-card { grid-template-columns: 1fr; }
+    .player { max-width: 100%; }
+    .header-right { width: 100%; justify-content: space-between; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Arkadiusz Szewczyk</h1>
+    <p class="subtitle" data-pl="Restauracja i archiwizacja nagrań analogowych" data-en="Audio Restoration &amp; Archiving">Restauracja i archiwizacja nagrań analogowych</p>
+  </div>
+  <div class="header-right">
+    <a href="mailto:panaes@gmail.com" class="contact-link">panaes@gmail.com</a>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('pl')" id="btn-pl">PL</button>
+      <button class="lang-btn" onclick="setLang('en')" id="btn-en">EN</button>
+    </div>
+  </div>
+</header>
+
+<div class="intro">
+  <p data-pl="Poniższe próbki ilustrują efekty restauracji nagrań analogowych. Każda para zawiera oryginalne nagranie oraz wersję po pełnym procesie obróbki — kliknij przycisk aby porównać."
+     data-en="The samples below illustrate the results of analogue audio restoration. Each pair contains the original recording and the fully processed version — click the button to compare.">
+    Poniższe próbki ilustrują efekty restauracji nagrań analogowych. Każda para zawiera oryginalne nagranie oraz wersję po pełnym procesie obróbki — kliknij przycisk aby porównać.
+  </p>
+</div>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot dot-original"></div>
+    <span data-pl="Oryginał" data-en="Original">Oryginał</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot dot-restored"></div>
+    <span data-pl="Po restauracji" data-en="Restored">Po restauracji</span>
+  </div>
+</div>
+
+<div class="samples" id="samples-container">
+  <!-- Samples injected by JS -->
+</div>
+
+<footer>
+  <p>© 2026 Arkadiusz Szewczyk &nbsp;·&nbsp; <a href="mailto:panaes@gmail.com">panaes@gmail.com</a> &nbsp;·&nbsp; +48 535 182 782</p>
+  <p><a href="https://www.youtube.com/@classicalmusicfromvinyl" target="_blank">YouTube</a> &nbsp;·&nbsp; <a href="https://www.instagram.com/motywlabel/" target="_blank">Motyw Label</a></p>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+//  DANE PRÓBEK — EDYTUJ TUTAJ / EDIT HERE
+//  Wstaw ścieżki do plików audio. Mogą to być:
+//  - ścieżki relatywne np. "audio/sample1_original.mp3"
+//  - linki zewnętrzne np. "https://..."
+// ══════════════════════════════════════════════════════════════════════
+const SAMPLES = [
+  {
+    titlePl: "Restauracja nagrania winylowego",
+    titleEn: "Vinyl recording restoration",
+    descPl:  "Usunięcie trzasków, szumów powierzchniowych i zniekształceń charakterystycznych dla zużytej płyty winylowej. Materiał: muzyka klasyczna, lata 60.",
+    descEn:  "Removal of crackle, surface noise and distortions typical of a worn vinyl record. Material: classical music, 1960s.",
+    original: "audio/sample1_original.mp3",   // ← WSTAW ŚCIEŻKĘ
+    restored: "audio/sample1_restored.mp3",   // ← WSTAW ŚCIEŻKĘ
+  },
+  {
+    titlePl: "Archiwizacja taśmy kasetowej",
+    titleEn: "Cassette tape archiving",
+    descPl:  "Transfer z taśmy kasetowej z lat 80., redukcja szumu taśmy, korekcja modulacji i wyrównanie częstotliwościowe.",
+    descEn:  "Transfer from a 1980s cassette tape with tape hiss reduction, wow & flutter correction and frequency equalisation.",
+    original: "audio/sample2_original.mp3",   // ← WSTAW ŚCIEŻKĘ
+    restored: "audio/sample2_restored.mp3",   // ← WSTAW ŚCIEŻKĘ
+  },
+  {
+    titlePl: "Restauracja nagrania archiwalnego",
+    titleEn: "Archival recording restoration",
+    descPl:  "Rekonstrukcja silnie zdegradowanego nagrania historycznego. Usunięcie artefaktów cyfrowych, odbudowa pasma częstotliwościowego.",
+    descEn:  "Reconstruction of a heavily degraded historical recording. Removal of digital artefacts and frequency band restoration.",
+    original: "audio/sample3_original.mp3",   // ← WSTAW ŚCIEŻKĘ
+    restored: "audio/sample3_restored.mp3",   // ← WSTAW ŚCIEŻKĘ
+  },
+  {
+    titlePl: "Mastering dla nośnika winylowego",
+    titleEn: "Vinyl mastering",
+    descPl:  "Mastering materiału do wydania na płycie winylowej. Korekcja dynamiki, RIAA, optimalizacja pod charakterystykę nośnika.",
+    descEn:  "Mastering for vinyl release. Dynamic processing, RIAA correction and optimisation for the medium's characteristics.",
+    original: "audio/sample4_original.mp3",   // ← WSTAW ŚCIEŻKĘ
+    restored: "audio/sample4_restored.mp3",   // ← WSTAW ŚCIEŻKĘ
+  },
+  {
+    titlePl: "Restauracja nagrania terenowego",
+    titleEn: "Field recording restoration",
+    descPl:  "Oczyszczenie nagrania terenowego z zakłóceń, szumów wiatru i artefaktów mikrofonowych przy zachowaniu naturalnego charakteru dźwięku.",
+    descEn:  "Cleaning a field recording from interference, wind noise and microphone artefacts while preserving the natural character of the sound.",
+    original: "audio/sample5_original.mp3",   // ← WSTAW ŚCIEŻKĘ
+    restored: "audio/sample5_restored.mp3",   // ← WSTAW ŚCIEŻKĘ
+  },
+];
+// ══════════════════════════════════════════════════════════════════════
+
+let lang = 'pl';
+const audios = [];
+
+function fmt(s) {
+  if (isNaN(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return m + ':' + String(sec).padStart(2, '0');
+}
+
+function buildSamples() {
+  const container = document.getElementById('samples-container');
+  container.innerHTML = '';
+
+  SAMPLES.forEach((s, i) => {
+    const card = document.createElement('div');
+    card.className = 'sample-card';
+    card.innerHTML = `
+      <div class="sample-meta">
+        <div class="sample-number">${String(i+1).padStart(2,'0')}</div>
+        <div class="sample-title">${lang === 'pl' ? s.titlePl : s.titleEn}</div>
+        <div class="sample-desc">${lang === 'pl' ? s.descPl : s.descEn}</div>
+      </div>
+      <div class="player" id="player-${i}">
+        <div class="track-buttons">
+          <button class="track-btn active-original" id="btn-orig-${i}" onclick="switchTrack(${i},'original')">
+            <span class="dot"></span>
+            <span data-pl="Oryginał" data-en="Original">${lang==='pl'?'Oryginał':'Original'}</span>
+          </button>
+          <button class="track-btn" id="btn-rest-${i}" onclick="switchTrack(${i},'restored')">
+            <span class="dot"></span>
+            <span data-pl="Po restauracji" data-en="Restored">${lang==='pl'?'Po restauracji':'Restored'}</span>
+          </button>
+        </div>
+        <div class="controls">
+          <button class="play-btn" id="play-${i}" onclick="togglePlay(${i})">
+            <svg viewBox="0 0 24 24" id="play-icon-${i}"><polygon points="5,3 19,12 5,21"/></svg>
+          </button>
+          <div class="progress-wrap">
+            <div class="progress-bar" id="bar-${i}" onclick="seek(event,${i})">
+              <div class="progress-fill" id="fill-${i}"></div>
+            </div>
+            <div class="time-row">
+              <span id="cur-${i}">0:00</span>
+              <span id="dur-${i}">0:00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+
+    const audio = new Audio();
+    audio.src = s.original;
+    audio._track = 'original';
+    audio._idx = i;
+
+    audio.addEventListener('timeupdate', () => {
+      const fill = document.getElementById('fill-' + i);
+      const cur  = document.getElementById('cur-'  + i);
+      if (audio.duration) {
+        fill.style.width = (audio.currentTime / audio.duration * 100) + '%';
+      }
+      cur.textContent = fmt(audio.currentTime);
+    });
+
+    audio.addEventListener('loadedmetadata', () => {
+      document.getElementById('dur-' + i).textContent = fmt(audio.duration);
+    });
+
+    audio.addEventListener('ended', () => {
+      const icon = document.getElementById('play-icon-' + i);
+      icon.innerHTML = '<polygon points="5,3 19,12 5,21"/>';
+      document.getElementById('fill-' + i).style.width = '0%';
+      document.getElementById('cur-' + i).textContent = '0:00';
+    });
+
+    audios.push(audio);
+  });
+}
+
+function switchTrack(idx, track) {
+  const audio = audios[idx];
+  const wasPlaying = !audio.paused;
+  const pos = audio.currentTime;
+
+  audio.src = track === 'original' ? SAMPLES[idx].original : SAMPLES[idx].restored;
+  audio._track = track;
+
+  const bo = document.getElementById('btn-orig-' + idx);
+  const br = document.getElementById('btn-rest-' + idx);
+  const fill = document.getElementById('fill-' + idx);
+
+  bo.className = 'track-btn' + (track === 'original' ? ' active-original' : '');
+  br.className = 'track-btn' + (track === 'restored'  ? ' active-restored'  : '');
+  fill.style.background = track === 'original' ? 'var(--original)' : 'var(--restored)';
+
+  audio.addEventListener('loadedmetadata', () => {
+    document.getElementById('dur-' + idx).textContent = fmt(audio.duration);
+    audio.currentTime = Math.min(pos, audio.duration);
+    if (wasPlaying) audio.play();
+  }, { once: true });
+}
+
+function togglePlay(idx) {
+  const audio = audios[idx];
+  const icon  = document.getElementById('play-icon-' + idx);
+
+  // pause all others
+  audios.forEach((a, j) => {
+    if (j !== idx && !a.paused) {
+      a.pause();
+      document.getElementById('play-icon-' + j).innerHTML = '<polygon points="5,3 19,12 5,21"/>';
+    }
+  });
+
+  if (audio.paused) {
+    audio.play();
+    icon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+  } else {
+    audio.pause();
+    icon.innerHTML = '<polygon points="5,3 19,12 5,21"/>';
+  }
+}
+
+function seek(e, idx) {
+  const bar = document.getElementById('bar-' + idx);
+  const audio = audios[idx];
+  const rect = bar.getBoundingClientRect();
+  const ratio = (e.clientX - rect.left) / rect.width;
+  if (audio.duration) audio.currentTime = ratio * audio.duration;
+}
+
+function setLang(l) {
+  lang = l;
+  document.getElementById('btn-pl').classList.toggle('active', l === 'pl');
+  document.getElementById('btn-en').classList.toggle('active', l === 'en');
+  document.documentElement.lang = l;
+
+  document.querySelectorAll('[data-pl]').forEach(el => {
+    el.textContent = el.getAttribute('data-' + l);
+  });
+
+  buildSamples();
+  audios.length = 0;
+  buildSamples();
+}
+
+buildSamples();
+</script>
+</body>
+</html>
