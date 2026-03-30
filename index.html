@@ -458,10 +458,14 @@ function buildSamples() {
     `;
     container.appendChild(card);
 
-    const audio = new Audio();
-    audio.src = s.original;
-    audio._track = 'original';
-    audio._idx = i;
+const audio = new Audio();
+audio.src = s.original;
+audio.preload = 'auto';
+audio._track = 'original';
+audio._idx = i;
+const audioRestored = new Audio();
+audioRestored.src = s.restored;
+audioRestored.preload = 'auto';
 
     audio.addEventListener('timeupdate', () => {
       const fill = document.getElementById('fill-' + i);
